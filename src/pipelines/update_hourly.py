@@ -19,8 +19,8 @@ def main():
         pollution_df = fetch_current_pollution()
         
         # Normalize timestamps to the same hour (APIs may return slightly different times)
-        weather_df['timestamp'] = pd.to_datetime(weather_df['timestamp']).dt.floor('H')
-        pollution_df['timestamp'] = pd.to_datetime(pollution_df['timestamp']).dt.floor('H')
+        weather_df['timestamp'] = pd.to_datetime(weather_df['timestamp']).dt.floor('h')
+        pollution_df['timestamp'] = pd.to_datetime(pollution_df['timestamp']).dt.floor('h')
         
         current_df = pd.merge(weather_df, pollution_df, on='timestamp', how='inner')
         
