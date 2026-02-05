@@ -108,6 +108,54 @@ class MongoDBHandler:
         
         return added, skipped
     
+    def query_features(self, collection_name='historical_features', limit=None, query=None):
+        """Query features from MongoDB collection"""
+        collection = self.db[collection_name]
+        
+        if query is None:
+            query = {}
+        
+        cursor = collection.find(query).sort('timestamp', ASCENDING)
+        
+        if limit:
+            cursor = cursor.limit(limit)
+        
+        documents = list(cursor)
+        
+        if not documents:
+            return pd.DataFrame()
+        
+        rows = []
+        for doc in documents:
+            row = {'timestamp': doc['timestamp'], 'aqi': doc['aqi']}
+            if '_id' in doc:
+                row['_id'] = str(doc['_id'])
+            row.update(doc['features'])
+            rows.append(row)
+        
+        return pd.DataFrame(rows)
+    
+    def query_last_n_hours(self, hours=24, collection_name='historical_features'):
+        """Query last n hours of data"""
+        collection = self.db[collection_name]
+        cutoff_time = datetime.utcnow() - timedelta(hours=hours)
+        
+        cursor = collection.find({'timestamp': {'$gte': cutoff_time}}).sort('timestamp', ASCENDING)
+        documents = list(cursor)
+        
+        if not documents:
+            return pd.DataFrame()
+        
+        rows = []
+        for doc in documents:
+            row = {'timestamp': doc['timestamp'], 'aqi': doc['aqi']}
+            if '_id' in doc:
+                row['_id'] = str(doc['_id'])
+            row.update(doc['features'])
+            rows.append(row)
+        
+        return pd.DataFrame(rows)
+    
     def close(self):
         """Close MongoDB connection"""
         self.client.close()

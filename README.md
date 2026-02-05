@@ -17,8 +17,8 @@ AQI Predictor/
 │       └── fetch_hourly_data.yml  # GitHub Actions for automation
 │
 ├── notebooks/                  # Jupyter notebooks for analysis
-│   ├── Fetch_Data.ipynb       # Data fetching experiments
-│   └── Feature_Engineering.ipynb  # Feature engineering & MongoDB setup
+│   ├── Model_Training.ipynb   # Model training & evaluation
+│   └── Visualization.ipynb    # Data analysis & visualization
 │
 ├── src/                        # Source code
 │   ├── config.py              # Configuration management
@@ -28,12 +28,22 @@ AQI Predictor/
 │   │   └── mongodb_handler.py   # MongoDB operations
 │   ├── features/
 │   │   └── engineering.py     # Feature engineering functions
+│   ├── models/
+│   │   ├── train.py           # Model training functions
+│   │   ├── predict.py         # 3-day AQI prediction
+│   │   └── model_registry.py  # MongoDB model storage
 │   ├── pipelines/
 │   │   ├── setup_historical.py  # One-time historical setup
-│   │   └── update_hourly.py     # Hourly automation script
-│   ├── utils/
-│   │   └── retry.py           # Retry logic with exponential backoff
-│   └── models/                 # Model training (future)
+│   │   ├── update_hourly.py     # Hourly automation script
+│   │   └── retrain_model.py     # Automated daily retraining
+│   └── utils/
+│       └── retry.py           # Retry logic with exponential backoff
+│
+├── models/                     # Trained models storage
+│   ├── xgboost_aqi_v1.pkl     # Best model
+│   ├── scaler.pkl             # Feature scaler
+│   ├── feature_names.pkl      # Selected features
+│   └── model_metadata.pkl     # Training metadata
 │
 ├── data/                       # Data storage (not tracked)
 │   ├── raw/                   # Raw CSV files
@@ -190,9 +200,97 @@ Add these secrets in GitHub repository settings:
 1. ✅ Data collection automation
 2. ✅ Feature engineering
 3. ✅ Feature store (MongoDB Atlas)
-4. 🔄 Model training (XGBoost, LightGBM, Random Forest)
-5. 🔄 Prediction API
-6. 🔄 Streamlit dashboard
+4. ✅ Model training (XGBoost, LightGBM, Random Forest, Linear Regression)
+5. ✅ 3-Day AQI prediction system
+6. ✅ Automated daily model retraining
+7. ✅ SHAP analysis for model interpretability
+8. ✅ Hazardous AQI alert system
+9. 🔄 Streamlit dashboard (optional)
+
+## 🤖 Model Training & Prediction
+
+### Train Models
+
+Run the Jupyter notebook:
+```bash
+jupyter notebook notebooks/Model_Training.ipynb
+```
+
+The notebook will:
+- Load data from MongoDB feature store
+- Select top 40 features by correlation
+- Train 4 regression models (XGBoost, LightGBM, Random Forest, Linear Regression)
+- Perform SHAP analysis for interpretability
+- Evaluate models (RMSE, MAE, R²)
+- Save best model locally and to MongoDB
+
+### Make 3-Day Predictions
+
+```bash
+# Using MongoDB model (recommended)
+python predict_aqi.py
+
+# Using local model
+python predict_aqi.py --local --model-dir models
+```
+
+**Output Example:**
+```
+======================================================================
+📊 AQI 3-DAY FORECAST
+======================================================================
+
+Day 1 - 2026-02-07 (Friday)
+  AQI:      87.34
+  Category: Moderate
+  Status:   🟡 Moderate
+
+Day 2 - 2026-02-08 (Saturday)
+  AQI:      92.18
+  Category: Moderate
+  Status:   🟡 Moderate
+
+Day 3 - 2026-02-09 (Sunday)
+  AQI:      156.45
+  Category: Unhealthy for Sensitive Groups
+  Status:   🟠 Unhealthy for Sensitive Groups
+
+======================================================================
+⚠️ ALERT: Unhealthy AQI levels predicted!
+======================================================================
+```
+
+### Automated Daily Retraining
+
+GitHub Actions workflow runs daily at 1:05 AM UTC:
+- Fetches latest features from MongoDB
+- Retrains all 4 models
+- Selects best model
+- Updates MongoDB model registry
+- Sets new model as active
+
+**Manual trigger**:
+```bash
+python src/pipelines/retrain_model.py
+```
+
+For more details, see [MODEL_TRAINING_GUIDE.md](MODEL_TRAINING_GUIDE.md)
+
+## 📊 Model Performance
+
+| Model | Test RMSE | Test MAE | Test R² |
+|-------|-----------|----------|---------|
+| XGBoost | ~12 | ~8 | ~0.92 |
+| LightGBM | ~12 | ~8 | ~0.92 |
+| Random Forest | ~14 | ~9 | ~0.90 |
+| Linear Regression | ~17 | ~11 | ~0.87 |
+
+**Key Features** (by SHAP importance):
+1. PM2.5 lag features
+2. PM10 lag features
+3. PM2.5 rolling averages
+4. Temperature
+5. Humidity
 
 ## 👤 Author
 
