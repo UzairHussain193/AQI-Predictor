@@ -1,4 +1,4 @@
-name: Automated Model Retraining
+name: Model Retraining
 
 on:
   schedule:
