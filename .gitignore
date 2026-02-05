@@ -1,0 +1,76 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+
+# Environment Variables
+.env
+.env.local
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Data Files (raw and processed)
+data/raw/*.csv
+data/processed/*.csv
+data/backfill/*.csv
+*.db
+*.sqlite
+
+# Model Files
+models/*.pkl
+models/*.h5
+models/*.pt
+models/*.joblib
+
+# Logs
+logs/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+
+# API Keys and Credentials
+credentials.json
+*.key
+
+# Temporary files
+tmp/
+temp/
+
+
+# Project Specific
+AQI_predict-1.pdf
+notex.txt
+guide.models
+
+# ❌ EXCLUDE (.gitignore):
+.env
+data/raw/*.csv
+data/processed/*.csv
+logs/
+venv/
+__pycache__/
+.ipynb_checkpoints/
+models/*.pkl
+
+IMPLEMENTATION.md
+app/
+data/

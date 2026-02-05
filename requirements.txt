@@ -1,0 +1,42 @@
+# Core dependencies
+requests
+requests-cache 
+retry-requests
+pandas
+numpy
+python-dotenv
+
+# Data visualization
+matplotlib
+seaborn
+plotly
+
+# Machine Learning
+scikit-learn
+xgboost
+
+# Jupyter
+jupyter
+ipykernel
+ipywidgets
+
+# Feature Store (for later)
+# hopsworks
+
+# API and Web Framework (for later)
+fastapi
+streamlit
+uvicorn
+
+# Utilities
+tqdm
+pytz
+
+
+#openmeteo
+openmeteo_requests
+
+
+# mongodb atlas
+pymongo[srv] 
+dnspython
