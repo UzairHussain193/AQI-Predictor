@@ -4,7 +4,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timezone
 from src.data.fetch_current import fetch_current_weather, fetch_current_pollution
 from src.data.mongodb_handler import MongoDBHandler
 from src.features.engineering import apply_all_features
@@ -14,13 +14,21 @@ def main():
     """Update feature store with current hour data"""
     
     try:
-        print(f"Fetching current data at {datetime.utcnow()}")
+        print(f"Fetching current data at {datetime.now(timezone.utc)}")
         weather_df = fetch_current_weather()
         pollution_df = fetch_current_pollution()
         
-        weather_df['timestamp'] = pd.to_datetime(weather_df['timestamp'])
-        pollution_df['timestamp'] = pd.to_datetime(pollution_df['timestamp'])
+        # Normalize timestamps to the same hour (APIs may return slightly different times)
+        weather_df['timestamp'] = pd.to_datetime(weather_df['timestamp']).dt.floor('H')
+        pollution_df['timestamp'] = pd.to_datetime(pollution_df['timestamp']).dt.floor('H')
+        
         current_df = pd.merge(weather_df, pollution_df, on='timestamp', how='inner')
+        
+        if current_df.empty:
+            print("✗ Error: Merge resulted in empty dataframe. Check API responses.")
+            print(f"Weather timestamp: {weather_df['timestamp'].iloc[0] if not weather_df.empty else 'None'}")
+            print(f"Pollution timestamp: {pollution_df['timestamp'].iloc[0] if not pollution_df.empty else 'None'}")
+            sys.exit(1)
         
         current_timestamp = current_df['timestamp'].iloc[0]
         
