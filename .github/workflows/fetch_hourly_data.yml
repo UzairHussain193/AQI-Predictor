@@ -2,7 +2,7 @@ name: Fetch Hourly AQI Data
 
 on:
   schedule:
-    - cron: '0 * * * *'  # Run every hour at minute 0
+    - cron: '6 * * * *'  # Run every hour at 6 minute 
   workflow_dispatch:  # Allow manual trigger
 
 jobs:
