@@ -5,8 +5,9 @@ import os
 from dotenv import load_dotenv
 from pathlib import Path
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from .env file if it exists (for local development)
+# On GitHub Actions, environment variables are set directly, so this is optional
+load_dotenv(verbose=False, override=False)
 
 class Config:
     """Configuration class for the project"""
@@ -56,9 +57,9 @@ class Config:
     def validate(cls):
         """Validate required configuration"""
         if not cls.OPENWEATHER_API_KEY:
-            raise ValueError("OPENWEATHER_API_KEY not set in .env file")
+            raise ValueError("OPENWEATHER_API_KEY not set in environment variables")
         if not all([cls.MONGODB_USERNAME, cls.MONGODB_PASSWORD, cls.MONGODB_CLUSTER]):
-            raise ValueError("MongoDB credentials not set in .env file")
+            raise ValueError("MongoDB credentials not set in environment variables")
         return True
 
 # Validate configuration on import
