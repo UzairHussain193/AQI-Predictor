@@ -74,3 +74,5 @@ models/*.pkl
 IMPLEMENTATION.md
 app/
 data/
+guide.md
+notes.txt
