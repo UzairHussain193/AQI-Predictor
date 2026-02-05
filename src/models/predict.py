@@ -13,7 +13,6 @@ import joblib
 from pathlib import Path
 
 from ..data.mongodb_handler import MongoDBHandler
-from ..data.fetch_current import fetch_current_data
 from ..features.engineering import apply_all_features
 from .model_registry import ModelRegistry
 
