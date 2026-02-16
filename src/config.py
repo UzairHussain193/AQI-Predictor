@@ -35,7 +35,7 @@ class Config:
     # Data Collection Settings
     DATA_FETCH_INTERVAL = int(os.getenv('DATA_FETCH_INTERVAL', 3600))
     HISTORICAL_START_DATE = '2025-11-01'
-    HISTORICAL_END_DATE = '2026-02-05'
+    HISTORICAL_END_DATE = '2026-02-15'
     
     # Retry Configuration
     MAX_RETRIES = 3

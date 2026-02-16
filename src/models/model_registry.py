@@ -24,7 +24,7 @@ class ModelRegistry:
         """
         self.db_handler = db_handler
         self.collection = db_handler.db['model_registry']
-        logger.info("✅ ModelRegistry initialized")
+        logger.info("ModelRegistry initialized")
     
     def save_model(self, model, scaler, model_name: str, version: str,
                    feature_names: list, performance: Dict[str, float],
@@ -70,7 +70,7 @@ class ModelRegistry:
         # Insert new model
         result = self.collection.insert_one(registry_doc)
         
-        logger.info(f"✅ Model saved! ID: {result.inserted_id}")
+        logger.info(f"Model saved! ID: {result.inserted_id}")
         return str(result.inserted_id)
     
     def load_active_model(self) -> Optional[Tuple[Any, Any, list, Dict]]:
@@ -86,7 +86,7 @@ class ModelRegistry:
         doc = self.collection.find_one({'is_active': True})
         
         if not doc:
-            logger.warning("⚠️ No active model found in registry!")
+            logger.warning("No active model found in registry!")
             return None
         
         # Deserialize model and scaler
@@ -102,7 +102,7 @@ class ModelRegistry:
             'created_at': doc['created_at']
         }
         
-        logger.info(f"✅ Loaded {metadata['model_name']} {metadata['version']}")
+        logger.info(f"Loaded {metadata['model_name']} {metadata['version']}")
         logger.info(f"   RMSE: {metadata['performance']['test_rmse']:.4f}")
         
         return model, scaler, feature_names, metadata
@@ -147,7 +147,7 @@ class ModelRegistry:
         doc = self.collection.find_one({'_id': ObjectId(model_id)})
         
         if not doc:
-            logger.warning(f"⚠️ Model {model_id} not found!")
+            logger.warning(f"Model {model_id} not found!")
             return None
         
         # Deserialize model and scaler
@@ -163,7 +163,7 @@ class ModelRegistry:
             'created_at': doc['created_at']
         }
         
-        logger.info(f"✅ Loaded {metadata['model_name']} {metadata['version']}")
+        logger.info(f"Loaded {metadata['model_name']} {metadata['version']}")
         
         return model, scaler, feature_names, metadata
     
@@ -191,8 +191,8 @@ class ModelRegistry:
         )
         
         if result.modified_count > 0:
-            logger.info(f"✅ Model {model_id} is now active")
+            logger.info(f"Model {model_id} is now active")
             return True
         else:
-            logger.warning(f"⚠️ Failed to activate model {model_id}")
+            logger.warning(f"Failed to activate model {model_id}")
             return False

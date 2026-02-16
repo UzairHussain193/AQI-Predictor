@@ -4,6 +4,7 @@ import pandas as pd
 from datetime import datetime
 import openmeteo_requests
 from src.config import Config
+from src.utils.aqi_calculator import calculate_epa_aqi
 
 
 def fetch_historical_weather(lat=None, lon=None, start_date=None, end_date=None):
@@ -70,17 +71,39 @@ def fetch_historical_pollution(lat=None, lon=None, start_date=None, end_date=Non
     
     pollution_records = []
     for record in data['list']:
+        components = record['components']
+        
+        # Extract pollutant concentrations (μg/m³)
+        pm25 = components.get('pm2_5', 0)
+        pm10 = components.get('pm10', 0)
+        o3 = components.get('o3', 0)
+        no2 = components.get('no2', 0)
+        so2 = components.get('so2', 0)
+        co = components.get('co', 0)
+        
+        # Calculate US EPA AQI (0-500 scale) from pollutant concentrations
+        epa_aqi = calculate_epa_aqi(
+            pm25=pm25,
+            pm10=pm10,
+            o3=o3,
+            no2=no2,
+            so2=so2,
+            co=co
+        )
+        
         pollution_records.append({
             'timestamp': datetime.utcfromtimestamp(record['dt']),
-            'aqi': record['main']['aqi'],
-            'co': record['components']['co'],
-            'no': record['components']['no'],
-            'no2': record['components']['no2'],
-            'o3': record['components']['o3'],
-            'so2': record['components']['so2'],
-            'pm2_5': record['components']['pm2_5'],
-            'pm10': record['components']['pm10'],
-            'nh3': record['components']['nh3']
+            'aqi': epa_aqi,  # US EPA AQI (0-500 scale)
+            'openweather_aqi': record['main']['aqi'],  # Keep original (1-5 scale)
+            'pm25': pm25,
+            'pm2_5': pm25,  # Alias for compatibility
+            'pm10': pm10,
+            'o3': o3,
+            'no2': no2,
+            'so2': so2,
+            'co': co,
+            'no': components.get('no', 0),
+            'nh3': components.get('nh3', 0)
         })
     
     return pd.DataFrame(pollution_records)

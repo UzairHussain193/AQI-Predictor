@@ -79,17 +79,49 @@ def init_predictor():
 @st.cache_data(ttl=3600)  # Cache for 1 hour
 def load_current_aqi(_db_handler):
     """Load current AQI from MongoDB"""
-    data = _db_handler.query_features(collection_name='historical_features', limit=1)
-    if not data.empty:
-        latest = data.iloc[-1]
-        return latest['aqi'], latest['timestamp']
+    collection = _db_handler.db['historical_features']
+    # Get the most recent record by sorting timestamp descending
+    latest_doc = collection.find_one(sort=[('timestamp', -1)])
+    if latest_doc:
+        return latest_doc.get('aqi'), latest_doc.get('timestamp')
     return None, None
 
 @st.cache_data(ttl=3600)
 def load_historical_data(_db_handler, days=7):
     """Load historical AQI data"""
-    data = _db_handler.query_features(collection_name='historical_features', limit=days*24)
-    return data
+    from datetime import timedelta
+    collection = _db_handler.db['historical_features']
+    
+    # Calculate cutoff time for last N days
+    cutoff_time = datetime.now() - timedelta(days=days)
+    
+    # Query records from last N days, sorted by timestamp
+    cursor = collection.find(
+        {'timestamp': {'$gte': cutoff_time}}
+    ).sort('timestamp', 1)  # 1 = ascending
+    
+    documents = list(cursor)
+    
+    if not documents:
+        return pd.DataFrame()
+    
+    # Convert to DataFrame - flatten all nested fields
+    rows = []
+    for doc in documents:
+        row = {}
+        # Flatten document - handle nested features
+        for key, value in doc.items():
+            if key == '_id':
+                row['_id'] = str(value)
+            elif isinstance(value, dict):
+                # If value is dict, flatten it
+                row.update(value)
+            else:
+                row[key] = value
+        rows.append(row)
+    
+    df = pd.DataFrame(rows)
+    return df
 
 @st.cache_data(ttl=3600)
 def get_predictions(_predictor):
@@ -253,13 +285,23 @@ def create_pollutant_chart(data):
     
     latest = data.iloc[-1]
     
-    pollutants = {
-        'PM2.5': latest.get('pm25', 0),
-        'PM10': latest.get('pm10', 0),
-        'O3': latest.get('o3', 0),
-        'NO2': latest.get('no2', 0),
-        'CO': latest.get('co', 0)
+    # Map possible column names to pollutants
+    pollutant_mappings = {
+        'PM2.5': ['pm25', 'pm2_5', 'pm2.5', 'PM25'],
+        'PM10': ['pm10', 'PM10'],
+        'O3': ['o3', 'O3'],
+        'NO2': ['no2', 'NO2'],
+        'CO': ['co', 'CO']
     }
+    
+    pollutants = {}
+    for name, possible_cols in pollutant_mappings.items():
+        value = 0
+        for col in possible_cols:
+            if col in latest.index:
+                value = latest.get(col, 0)
+                break
+        pollutants[name] = value
     
     fig = go.Figure(data=[
         go.Bar(
@@ -354,22 +396,28 @@ def main():
         
         st.divider()
         
-        # About
-        st.subheader("ℹ️ About")
-        st.info("""
-        **Data Sources:**
-        - OpenWeather API
-        - Open-Meteo Archive
-        
-        **Update Frequency:**
-        - Hourly data collection
-        - Daily model retraining
-        
-        **Features:**
-        - 3-day AQI forecast
-        - Real-time monitoring
-        - Historical trends
-        """)
+        # Data Info
+        st.subheader("📊 Data Info")
+        try:
+            collection = db_handler.db['historical_features']
+            total_records = collection.count_documents({})
+            st.write(f"**Total Records:** {total_records:,}")
+            
+            # Get latest record to show available fields
+            latest = collection.find_one(sort=[('timestamp', -1)])
+            if latest:
+                st.write(f"**Latest Data:** {latest['timestamp'].strftime('%Y-%m-%d %H:%M')}")
+                
+                # Show available pollutant fields
+                pollutants = []
+                for key in ['pm25', 'pm2_5', 'pm10', 'o3', 'no2', 'co', 'so2']:
+                    if key in latest:
+                        pollutants.append(key.upper())
+                
+                if pollutants:
+                    st.write(f"**Pollutants:** {', '.join(pollutants)}")
+        except Exception as e:
+            st.caption(f"Could not load data info")
     
     # Main content
     try:
@@ -476,16 +524,26 @@ def main():
                 
                 # Pollutant table
                 latest = historical_data.iloc[-1]
-                pollutant_data = {
-                    'Pollutant': ['PM2.5', 'PM10', 'O3', 'NO2', 'CO'],
-                    'Current Level': [
-                        f"{latest.get('pm25', 0):.2f} µg/m³",
-                        f"{latest.get('pm10', 0):.2f} µg/m³",
-                        f"{latest.get('o3', 0):.2f} µg/m³",
-                        f"{latest.get('no2', 0):.2f} µg/m³",
-                        f"{latest.get('co', 0):.2f} µg/m³"
-                    ]
+                
+                # Find available pollutant columns
+                pollutant_mappings = {
+                    'PM2.5': ['pm25', 'pm2_5', 'pm2.5', 'PM25'],
+                    'PM10': ['pm10', 'PM10'],
+                    'O3': ['o3', 'O3'],
+                    'NO2': ['no2', 'NO2'],
+                    'CO': ['co', 'CO']
                 }
+                
+                pollutant_data = {'Pollutant': [], 'Current Level': []}
+                for name, possible_cols in pollutant_mappings.items():
+                    value = 0
+                    for col in possible_cols:
+                        if col in latest.index:
+                            value = latest.get(col, 0)
+                            break
+                    pollutant_data['Pollutant'].append(name)
+                    pollutant_data['Current Level'].append(f"{value:.2f} µg/m³")
+                
                 st.dataframe(pd.DataFrame(pollutant_data), use_container_width=True)
             else:
                 st.warning("No pollutant data available")
@@ -494,9 +552,18 @@ def main():
             if not historical_data.empty:
                 st.subheader("Statistical Summary")
                 
-                # Descriptive statistics
-                stats = historical_data[['aqi', 'pm25', 'pm10', 'o3', 'no2', 'co']].describe()
-                st.dataframe(stats, use_container_width=True)
+                # Select available columns for statistics
+                available_cols = ['aqi']
+                pollutant_cols = ['pm25', 'pm2_5', 'pm10', 'o3', 'no2', 'co', 'so2', 'nh3']
+                for col in pollutant_cols:
+                    if col in historical_data.columns:
+                        available_cols.append(col)
+                
+                if len(available_cols) > 1:
+                    stats = historical_data[available_cols].describe()
+                    st.dataframe(stats, use_container_width=True)
+                else:
+                    st.warning("Limited data available for statistics")
                 
                 # AQI distribution
                 fig = px.histogram(historical_data, x='aqi', nbins=50, 
@@ -510,8 +577,16 @@ def main():
             st.subheader("Download Historical Data")
             
             if not historical_data.empty:
-                # Prepare download data
-                download_data = historical_data[['timestamp', 'aqi', 'pm25', 'pm10', 'o3', 'no2', 'co']].copy()
+                # Prepare download data - select available columns
+                base_cols = ['timestamp', 'aqi']
+                pollutant_cols = ['pm25', 'pm2_5', 'pm10', 'o3', 'no2', 'co', 'so2', 'nh3']
+                
+                cols_to_export = base_cols.copy()
+                for col in pollutant_cols:
+                    if col in historical_data.columns:
+                        cols_to_export.append(col)
+                
+                download_data = historical_data[cols_to_export].copy()
                 download_data['timestamp'] = download_data['timestamp'].astype(str)
                 
                 csv = download_data.to_csv(index=False)

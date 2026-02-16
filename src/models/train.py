@@ -144,7 +144,7 @@ def train_models(X_train, y_train, X_val, y_val, X_test, y_test):
     }
     logger.info(f"LinearRegression - Test RMSE: {results['LinearRegression']['test']['RMSE']:.4f}")
     
-    logger.info("✅ All models trained successfully!")
+    logger.info("All models trained successfully!")
     
     return models, results, scaler
 
@@ -164,7 +164,7 @@ def select_best_model(models, results):
                           key=lambda k: results[k]['test']['RMSE'])
     best_model = models[best_model_name]
     
-    logger.info(f"🏆 Best Model: {best_model_name}")
+    logger.info(f"Best Model: {best_model_name}")
     logger.info(f"   Test RMSE: {results[best_model_name]['test']['RMSE']:.4f}")
     logger.info(f"   Test R²: {results[best_model_name]['test']['R²']:.4f}")
     
