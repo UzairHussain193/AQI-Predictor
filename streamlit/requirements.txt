@@ -9,4 +9,4 @@ requests
 scikit-learn
 xgboost
 lightgbm
-shap
+shap>=0.50.0
