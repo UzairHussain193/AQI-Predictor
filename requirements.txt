@@ -1,58 +1,58 @@
-# Core dependencies
-requests
-requests-cache 
-retry-requests
-pandas
-numpy
-python-dotenv
+# # Core dependencies
+# requests
+# requests-cache 
+# retry-requests
+# pandas
+# numpy
+# python-dotenv
 
-# Data visualization
-matplotlib
-seaborn
-plotly
+# # Data visualization
+# matplotlib
+# seaborn
+# plotly
 
-# Machine Learning
-scikit-learn
-xgboost
-lightgbm
-shap
-joblib
+# # Machine Learning
+# scikit-learn
+# xgboost
+# lightgbm
+# shap
+# joblib
 
-# Jupyter
-jupyter
-ipykernel
-ipywidgets
+# # Jupyter
+# jupyter
+# ipykernel
+# ipywidgets
 
-# Feature Store (for later)
-# hopsworks
+# # Feature Store (for later)
+# # hopsworks
 
-# API and Web Framework (for later)
-fastapi
+# # API and Web Framework (for later)
+# fastapi
 streamlit
-uvicorn
+# uvicorn
 
-# Utilities
-tqdm
-pytz
-
-
-#openmeteo
-openmeteo_requests
+# # Utilities
+# tqdm
+# pytz
 
 
-# mongodb atlas
-pymongo[srv] 
-dnspython
+# #openmeteo
+# openmeteo_requests
 
-streamlit
-pandas
-numpy
-plotly
-pymongo
-dnspython
-python-dotenv
-requests
-scikit-learn
-xgboost
-lightgbm
-shap
+
+# # mongodb atlas
+# pymongo[srv] 
+# dnspython
+
+# streamlit
+# pandas
+# numpy
+# plotly
+# pymongo
+# dnspython
+# python-dotenv
+# requests
+# scikit-learn
+# xgboost
+# lightgbm
+# shap
