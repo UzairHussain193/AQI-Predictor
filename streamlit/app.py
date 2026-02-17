@@ -20,6 +20,10 @@ WEBAPP_DIR = Path(__file__).parent
 PROJECT_ROOT = WEBAPP_DIR.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+# Import project modules
+from src.data.mongodb_handler import MongoDBHandler
+from src.models.predict import AQIPredictor
+from src.models.model_registry import ModelRegistry
 
 import pandas as pd
 from dotenv import load_dotenv
@@ -29,10 +33,6 @@ import plotly.express as px
 from datetime import datetime, timezone, timedelta
 import time
 
-# Import project modules
-from src.data.mongodb_handler import MongoDBHandler
-from src.models.predict import AQIPredictor
-from src.models.model_registry import ModelRegistry
 
 
 # 4. Load .env for local dev (optional)
