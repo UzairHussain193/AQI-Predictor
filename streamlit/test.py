@@ -33,10 +33,10 @@ def main():
     # setup_environment()  # Call this FIRST
     
     st.title("Test App")
-    st.write(f"Username: {os.getenv('MONGODB_USERNAME')}")
-    st.write(f"Database: {os.getenv('MONGODB_DATABASE')}")
-    st.write(f"OpenWeather API Key: {os.getenv('OPENWEATHER_API_KEY')[:5]}...")  # Show first 5 chars for security
-    # ... rest of your app
+    # st.write(f"Username: {os.getenv('MONGODB_USERNAME')}")
+    # st.write(f"Database: {os.getenv('MONGODB_DATABASE')}")
+    # st.write(f"OpenWeather API Key: {os.getenv('OPENWEATHER_API_KEY')[:5]}...")  # Show first 5 chars for security
+    # # ... rest of your app
 
 # 7. Entry point
 if __name__ == "__main__":
