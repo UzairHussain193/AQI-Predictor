@@ -2,6 +2,15 @@
 Streamlit Dashboard for AQI Prediction System
 Air Quality Index Predictor for Hyderabad, Sindh
 """
+import streamlit as st
+
+# Page configuration
+st.set_page_config(
+    page_title="AQI Predictor - Hyderabad",
+    page_icon="🌍",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
 import sys
 from pathlib import Path
@@ -13,29 +22,14 @@ project_root = current_file.parent.parent  # Go up from streamlit/ to project ro
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-# # Debug: Verify paths (can remove after fixing)
-# print(f"🔍 DEBUG INFO:")
-# print(f"Current file: {current_file}")
-# print(f"Project root: {project_root}")
-# print(f"Project root exists: {project_root.exists()}")
-# print(f"src folder exists: {(project_root / 'src').exists()}")
-# print(f"src/data exists: {(project_root / 'src' / 'data').exists()}")
-# print(f"src/__init__.py exists: {(project_root / 'src' / '__init__.py').exists()}")
-# print(f"sys.path[0]: {sys.path[0]}")
 
-import streamlit as st
+def setup_environment():
+    os.environ["MONGODB_USERNAME"] = st.secrets.get("MONGODB_USERNAME", os.getenv("MONGODB_USERNAME", ""))
+    os.environ["MONGODB_PASSWORD"] = st.secrets.get("MONGODB_PASSWORD", os.getenv("MONGODB_PASSWORD", ""))
+    os.environ["MONGODB_CLUSTER"] = st.secrets.get("MONGODB_CLUSTER", os.getenv("MONGODB_CLUSTER", ""))
+    os.environ["MONGODB_DATABASE"] = st.secrets.get("MONGODB_DATABASE", os.getenv("MONGODB_DATABASE", "aqi_feature_store"))
+    os.environ["OPENWEATHER_API_KEY"] = st.secrets.get("OPENWEATHER_API_KEY", os.getenv("OPENWEATHER_API_KEY", ""))
 
-# SET ENVIRONMENT VARIABLES FROM SECRETS (before other imports)
-# This ensures MongoDB handler and data fetchers use the correct credentials
-# os.environ["MONGODB_URI"] = st.secrets.get("MONGODB_URI", os.getenv("MONGODB_URI", ""))
-# os.environ["MONGODB_DATABASE"] = st.secrets.get("MONGODB_DATABASE", os.getenv("MONGODB_DATABASE", "aqi_feature_store"))
-
-# Around line 30, change to:
-os.environ["MONGODB_USERNAME"] = st.secrets.get("MONGODB_USERNAME", os.getenv("MONGODB_USERNAME", ""))
-os.environ["MONGODB_PASSWORD"] = st.secrets.get("MONGODB_PASSWORD", os.getenv("MONGODB_PASSWORD", ""))
-os.environ["MONGODB_CLUSTER"] = st.secrets.get("MONGODB_CLUSTER", os.getenv("MONGODB_CLUSTER", ""))
-os.environ["MONGODB_DATABASE"] = st.secrets.get("MONGODB_DATABASE", os.getenv("MONGODB_DATABASE", "aqi_feature_store"))
-os.environ["OPENWEATHER_API_KEY"] = st.secrets.get("OPENWEATHER_API_KEY", os.getenv("OPENWEATHER_API_KEY", ""))
 
 import pandas as pd
 import numpy as np
@@ -49,14 +43,6 @@ from src.data.mongodb_handler import MongoDBHandler
 from src.models.predict import AQIPredictor
 from src.models.model_registry import ModelRegistry
 
-
-# Page configuration
-st.set_page_config(
-    page_title="AQI Predictor - Hyderabad",
-    page_icon="🌍",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
 
 # Custom CSS - Modern Design
 st.markdown("""
@@ -546,13 +532,7 @@ def create_pollutant_chart(data):
 def main():
     """Main Streamlit app"""
     
-    # DEBUG: Print to logs
-    print("🚀 App starting...")
-    print(f"📝 Secrets available: {list(st.secrets.keys())}")
-    st.write("If you see this, secrets and imports work!")
-    st.write(f"MongoDB Username: {os.getenv('MONGODB_USERNAME')}")
-    st.write(f"Database: {os.getenv('MONGODB_DATABASE')}")
-    # Comment out everything else
+    setup_environment()  # Call the setup function
     
     # Hero Header
     st.markdown('<p class="main-header">🌍 Air Quality Index Predictor</p>', unsafe_allow_html=True)

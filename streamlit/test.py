@@ -1,47 +1,26 @@
-"""
-Streamlit Dashboard for AQI Prediction System
-Air Quality Index Predictor for Hyderabad, Sindh
-"""
-
 import streamlit as st
 import sys
 from pathlib import Path
 import os
+
+# 1. Page config (FIRST st. command)
+st.set_page_config(page_title="AQI Predictor", page_icon="🌍", layout="wide")
+
+# 2. Path setup
+WEBAPP_DIR = Path(__file__).parent
+PROJECT_ROOT = WEBAPP_DIR.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+
+# 3. Other imports
 import pandas as pd
-import numpy as np
-import plotly.graph_objects as go
-import plotly.express as px
-from datetime import datetime, timezone, timedelta
-import time
+from dotenv import load_dotenv
+# ... etc
 
-# # Import project modules
-# from src.data.mongodb_handler import MongoDBHandler
-# from src.models.predict import AQIPredictor
-# from src.models.model_registry import ModelRegistry
+# 4. Load .env for local dev (optional)
+if (PROJECT_ROOT / '.env').exists():
+    load_dotenv(PROJECT_ROOT / '.env')
 
-# Add project root to path
-current_file = Path(__file__).resolve()
-project_root = current_file.parent.parent  # Go up from streamlit/ to project root
-if str(project_root) not in sys.path:
-    sys.path.insert(0, str(project_root))
-
-# # Debug: Verify paths (can remove after fixing)
-# print(f"🔍 DEBUG INFO:")
-# print(f"Current file: {current_file}")
-# print(f"Project root: {project_root}")
-# print(f"Project root exists: {project_root.exists()}")
-# print(f"src folder exists: {(project_root / 'src').exists()}")
-# print(f"src/data exists: {(project_root / 'src' / 'data').exists()}")
-# print(f"src/__init__.py exists: {(project_root / 'src' / '__init__.py').exists()}")
-# print(f"sys.path[0]: {sys.path[0]}")
-
-
-# SET ENVIRONMENT VARIABLES FROM SECRETS (before other imports)
-# This ensures MongoDB handler and data fetchers use the correct credentials
-# os.environ["MONGODB_URI"] = st.secrets.get("MONGODB_URI", os.getenv("MONGODB_URI", ""))
-# os.environ["MONGODB_DATABASE"] = st.secrets.get("MONGODB_DATABASE", os.getenv("MONGODB_DATABASE", "aqi_feature_store"))
-
-# Around line 30, change to:
+# 5. Helper function for environment setup
 def setup_environment():
     os.environ["MONGODB_USERNAME"] = st.secrets.get("MONGODB_USERNAME", os.getenv("MONGODB_USERNAME", ""))
     os.environ["MONGODB_PASSWORD"] = st.secrets.get("MONGODB_PASSWORD", os.getenv("MONGODB_PASSWORD", ""))
@@ -49,29 +28,16 @@ def setup_environment():
     os.environ["MONGODB_DATABASE"] = st.secrets.get("MONGODB_DATABASE", os.getenv("MONGODB_DATABASE", "aqi_feature_store"))
     os.environ["OPENWEATHER_API_KEY"] = st.secrets.get("OPENWEATHER_API_KEY", os.getenv("OPENWEATHER_API_KEY", ""))
 
-
-# Page configuration
-st.set_page_config(
-    page_title="AQI Predictor - Hyderabad",
-    page_icon="🌍",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-
+# 6. Main function
 def main():
-    """Main Streamlit app"""
+    setup_environment()  # Call this FIRST
     
-    setup_environment()
-    
-    # DEBUG: Print to logs
-    print("🚀 App starting...")
-    print(f"📝 Secrets available: {list(st.secrets.keys())}")
-    st.write("If you see this, secrets and imports work!")
-    st.write(f"MongoDB Username: {os.getenv('MONGODB_USERNAME')}")
+    st.title("Test App")
+    st.write(f"Username: {os.getenv('MONGODB_USERNAME')}")
     st.write(f"Database: {os.getenv('MONGODB_DATABASE')}")
+    st.write(f"OpenWeather API Key: {os.getenv('OPENWEATHER_API_KEY')[:5]}...")  # Show first 5 chars for security
+    # ... rest of your app
 
-
-
+# 7. Entry point
 if __name__ == "__main__":
     main()
