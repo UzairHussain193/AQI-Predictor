@@ -4,7 +4,12 @@ A production-ready Air Quality Index (AQI) prediction system using machine learn
 
 ## 🌐 Live Application
 
-**Dashboard**: [https://hyd-aqi-predictor.streamlit.app/](https://hyd-aqi-predictor.streamlit.app/)
+<p><strong>Dashboard:</strong> 
+<a href="https://hyd-aqi-predictor.streamlit.app/" target="_blank">
+https://hyd-aqi-predictor.streamlit.app/
+</a>
+</p>
+
 
 Features:
 - Real-time AQI monitoring
