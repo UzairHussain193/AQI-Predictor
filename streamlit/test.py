@@ -1,7 +1,7 @@
 import streamlit as st
-# import sys
-# from pathlib import Path
-# import os
+import sys
+from pathlib import Path
+import os
 
 # 1. Page config (FIRST st. command)
 st.set_page_config(page_title="AQI Predictor", page_icon="🌍", layout="wide")
