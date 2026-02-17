@@ -39,8 +39,8 @@ import time
 
 
 # 4. Load .env for local dev (optional)
-if (PROJECT_ROOT / '.env').exists():
-    load_dotenv(PROJECT_ROOT / '.env')
+# if (PROJECT_ROOT / '.env').exists():
+#     load_dotenv(PROJECT_ROOT / '.env')
 
 
 def setup_environment():
