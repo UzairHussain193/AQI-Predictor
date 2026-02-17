@@ -5,12 +5,32 @@ Air Quality Index Predictor for Hyderabad, Sindh
 
 import sys
 from pathlib import Path
+import os
 
 # Add project root to path
-project_root = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(project_root))
+current_file = Path(__file__).resolve()
+project_root = current_file.parent.parent  # Go up from streamlit/ to project root
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
+# # Debug: Verify paths (can remove after fixing)
+# print(f"🔍 DEBUG INFO:")
+# print(f"Current file: {current_file}")
+# print(f"Project root: {project_root}")
+# print(f"Project root exists: {project_root.exists()}")
+# print(f"src folder exists: {(project_root / 'src').exists()}")
+# print(f"src/data exists: {(project_root / 'src' / 'data').exists()}")
+# print(f"src/__init__.py exists: {(project_root / 'src' / '__init__.py').exists()}")
+# print(f"sys.path[0]: {sys.path[0]}")
 
 import streamlit as st
+
+# SET ENVIRONMENT VARIABLES FROM SECRETS (before other imports)
+# This ensures MongoDB handler and data fetchers use the correct credentials
+os.environ["MONGODB_URI"] = st.secrets.get("MONGODB_URI", os.getenv("MONGODB_URI", ""))
+os.environ["MONGODB_DATABASE"] = st.secrets.get("MONGODB_DATABASE", os.getenv("MONGODB_DATABASE", "aqi_feature_store"))
+os.environ["OPENWEATHER_API_KEY"] = st.secrets.get("OPENWEATHER_API_KEY", os.getenv("OPENWEATHER_API_KEY", ""))
+
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
@@ -23,6 +43,7 @@ from src.data.mongodb_handler import MongoDBHandler
 from src.models.predict import AQIPredictor
 from src.models.model_registry import ModelRegistry
 
+
 # Page configuration
 st.set_page_config(
     page_title="AQI Predictor - Hyderabad",
@@ -31,36 +52,227 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS
+# Custom CSS - Modern Design
 st.markdown("""
 <style>
-    .main-header {
-        font-size: 2.5rem;
-        font-weight: bold;
-        text-align: center;
-        color: #1f77b4;
-        padding: 1rem;
+    /* Import Google Fonts */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+    
+    /* Global Styles */
+    * {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
     }
+    
+    /* Hero Header - Ultra Modern - Force Override */
+    .main-header {
+        font-size: 6.5rem !important;
+        font-weight: 900 !important;
+        text-align: center !important;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #ff6ec7 75%, #ff9a56 100%) !important;
+        background-size: 200% auto !important;
+        -webkit-background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+        background-clip: text !important;
+        padding: 3rem 1rem 1rem 1rem !important;
+        letter-spacing: -4px !important;
+        animation: fadeInDown 0.8s ease-out, gradientShift 8s ease infinite !important;
+        text-shadow: 0 0 40px rgba(102, 126, 234, 0.5) !important;
+        position: relative !important;
+        line-height: 1.1 !important;
+        display: block !important;
+        margin: 0 auto !important;
+    }
+    
+    /* Responsive sizing for smaller screens */
+    @media (max-width: 768px) {
+        .main-header {
+            font-size: 3.5rem !important;
+            letter-spacing: -2px !important;
+        }
+        .subtitle {
+            font-size: 1.1rem !important;
+        }
+    }
+    
+    @keyframes gradientShift {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+    }
+    
+    .main-header::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 120%;
+        height: 120%;
+        background: radial-gradient(circle, rgba(102, 126, 234, 0.2) 0%, transparent 70%);
+        z-index: -1;
+        animation: pulse 3s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
+        50% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.1); }
+    }
+    
+    .subtitle {
+        font-size: 1.5rem !important;
+        text-align: center !important;
+        color: #a8b2c6 !important;
+        font-weight: 600 !important;
+        margin-top: -0.5rem !important;
+        padding-bottom: 2rem !important;
+        animation: fadeIn 1s ease-out 0.3s both !important;
+        letter-spacing: 0.5px !important;
+        display: block !important;
+    }
+    
+    /* Modern Metric Card */
     .metric-card {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1.5rem;
-        border-radius: 10px;
+        padding: 2rem;
+        border-radius: 20px;
         color: white;
         text-align: center;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        animation: fadeIn 0.6s ease-out;
     }
+    
+    .metric-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+    }
+    
+    /* Forecast Cards - Modern Glassmorphism */
     .forecast-card {
-        padding: 1rem;
-        border-radius: 10px;
+        padding: 1.5rem;
+        border-radius: 20px;
         text-align: center;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        transition: all 0.3s ease;
+        animation: slideUp 0.5s ease-out;
+        min-height: 180px;
     }
-    .good { background-color: #00e400; }
-    .moderate { background-color: #ffff00; }
-    .unhealthy-sensitive { background-color: #ff7e00; }
-    .unhealthy { background-color: #ff0000; color: white; }
-    .very-unhealthy { background-color: #8f3f97; color: white; }
-    .hazardous { background-color: #7e0023; color: white; }
+    
+    .forecast-card:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    }
+    
+    /* AQI Category Colors - Enhanced */
+    .good { 
+        background: linear-gradient(135deg, #00e400 0%, #00b300 100%);
+        color: white;
+    }
+    .moderate { 
+        background: linear-gradient(135deg, #36d1dc 0%, #5b86e5 100%);
+        color: white;
+    }
+    .unhealthy-sensitive { 
+        background: linear-gradient(135deg, #ff7e00 0%, #ff6b00 100%);
+        color: white;
+    }
+    .unhealthy { 
+        background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+        color: white;
+    }
+    .very-unhealthy { 
+        background: linear-gradient(135deg, #8f3f97 0%, #6d2077 100%);
+        color: white;
+    }
+    .hazardous { 
+        background: linear-gradient(135deg, #7e0023 0%, #5a0019 100%);
+        color: white;
+    }
+    
+    /* Model Performance Card */
+    .model-card {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        padding: 1.5rem;
+        border-radius: 15px;
+        color: white;
+        margin: 1rem 0;
+        box-shadow: 0 8px 25px rgba(245, 87, 108, 0.3);
+    }
+    
+    .metric-row {
+        display: flex;
+        justify-content: space-between;
+        margin: 0.5rem 0;
+        padding: 0.5rem;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+    }
+    
+    /* Info Box */
+    .info-box {
+        background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+        padding: 1.5rem;
+        border-radius: 15px;
+        border-left: 4px solid #667eea;
+        margin: 1rem 0;
+    }
+    
+    /* Animations */
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    @keyframes fadeInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Footer */
+    .footer {
+        text-align: center;
+        padding: 2rem 1rem;
+        background: linear-gradient(135deg, #667eea10 0%, #764ba210 100%);
+        border-radius: 15px;
+        margin-top: 2rem;
+    }
+    
+    .footer-icon:hover {
+        transform: translateY(-5px) scale(1.15) !important;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.6) !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    /* Improved Spacing */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 2rem;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        padding: 0 2rem;
+        font-weight: 600;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -328,25 +540,92 @@ def create_pollutant_chart(data):
 def main():
     """Main Streamlit app"""
     
-    # Header
+    # Hero Header
     st.markdown('<p class="main-header">🌍 Air Quality Index Predictor</p>', unsafe_allow_html=True)
-    st.markdown('<p style="text-align: center; color: gray;">Hyderabad, Sindh, Pakistan (25.3960°N, 68.3578°E)</p>', unsafe_allow_html=True)
+    st.markdown('<p class="subtitle">📍 Hyderabad, Sindh, Pakistan (25.3960°N, 68.3578°E)</p>', unsafe_allow_html=True)
     
-    # Initialize
-    try:
-        db_handler = init_db_handler()
-    except Exception as e:
-        st.error(f"❌ Failed to connect to MongoDB: {str(e)}")
-        st.info("Please check your MONGODB_URI environment variable and network connection.")
-        st.stop()
+    # AQI Information Panel
+    with st.expander("ℹ️ What is AQI? (Click to learn more)", expanded=False):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("""
+            ### 📊 Air Quality Index Scale
+            
+            **AQI** measures air pollution levels:
+            
+            - **0-50**: Good 🟢  
+              Air quality is satisfactory, and air pollution poses little or no risk.
+            
+            - **51-100**: Moderate 🟡  
+              Air quality is acceptable. However, there may be a risk for some people, particularly those who are unusually sensitive to air pollution.
+            
+            - **101-150**: Unhealthy for Sensitive Groups 🟠  
+              Members of sensitive groups may experience health effects. The general public is less likely to be affected.
+            
+            - **151-200**: Unhealthy 🔴  
+              Some members of the general public may experience health effects; members of sensitive groups may experience more serious health effects.
+            
+            - **201-300**: Very Unhealthy 🟣  
+              Health alert: The risk of health effects is increased for everyone.
+            
+            - **301+**: Hazardous 🟤  
+              Health warning of emergency conditions: everyone is more likely to be affected.
+            """)
+        
+        with col2:
+            st.markdown("""
+            ### 🧪 Major Pollutants
+            
+            **PM2.5** (Fine Particulate Matter)  
+            Tiny particles ≤2.5 micrometers that can penetrate deep into lungs and bloodstream.
+            
+            **PM10** (Coarse Particulate Matter)  
+            Particles ≤10 micrometers from dust, pollen, and mold.
+            
+            **O₃** (Ozone)  
+            Ground-level ozone, a key component of smog that can trigger asthma.
+            
+            **NO₂** (Nitrogen Dioxide)  
+            Gas from vehicle emissions and power plants that irritates airways.
+            
+            **SO₂** (Sulfur Dioxide)  
+            Gas from fossil fuel combustion that can cause respiratory issues.
+            
+            **CO** (Carbon Monoxide)  
+            Colorless, odorless gas that reduces oxygen delivery to organs.
+            
+            ---
+            
+            ### 🏃 Health Recommendations
+            
+            - **Good (0-50)**: Ideal for all outdoor activities
+            - **Moderate (51-100)**: Sensitive groups should limit prolonged outdoor exertion
+            - **Unhealthy for Sensitive (101-150)**: Reduce prolonged/heavy outdoor exertion
+            - **Unhealthy (151-200)**: Everyone should reduce outdoor activities
+            - **Very Unhealthy (201-300)**: Avoid all outdoor exertion
+            - **Hazardous (301+)**: Stay indoors, use air purifiers
+            """)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Initialize with loading animation
+    with st.spinner('🔄 Connecting to database...'):
+        try:
+            db_handler = init_db_handler()
+        except Exception as e:
+            st.error(f"❌ Failed to connect to MongoDB: {str(e)}")
+            st.info("Please check your MONGODB_URI environment variable and network connection.")
+            st.stop()
     
     # Initialize predictor (may fail if no model exists yet)
     predictor = None
-    try:
-        predictor = init_predictor()
-    except Exception as e:
-        st.warning(f"⚠️ Predictor initialization: {str(e)}")
-        st.info("The dashboard will run in read-only mode. Train a model first using Model_Training.ipynb")
+    with st.spinner('🤖 Loading prediction model...'):
+        try:
+            predictor = init_predictor()
+        except Exception as e:
+            st.warning(f"⚠️ Predictor initialization: {str(e)}")
+            st.info("The dashboard will run in read-only mode. Train a model first using Model_Training.ipynb")
     
     # Sidebar
     with st.sidebar:
@@ -365,29 +644,75 @@ def main():
         
         st.divider()
         
-        # Model info
+        # Model info - Enhanced Display
         st.subheader("🤖 Active Model")
         try:
             registry = ModelRegistry(db_handler)
             result = registry.load_active_model()
             if result:
                 _, _, _, metadata = result
-                st.write(f"**Model:** {metadata.get('model_name', 'Unknown')}")
-                st.write(f"**Version:** {metadata.get('version', 'N/A')}")
+                
+                # Model Card
+                st.markdown(f"""
+                <div class="model-card">
+                    <h3 style="margin: 0 0 1rem 0;">🎯 {metadata.get('model_name', 'Unknown')}</h3>
+                    <div class="metric-row">
+                        <span>Version</span>
+                        <strong>{metadata.get('version', 'N/A')}</strong>
+                    </div>
+                """, unsafe_allow_html=True)
                 
                 # Performance metrics
                 perf = metadata.get('performance', {})
                 if perf:
-                    st.write(f"**RMSE:** {perf.get('test_rmse', 0):.2f}")
-                    st.write(f"**R²:** {perf.get('test_r2', 0):.3f}")
+                    rmse = perf.get('test_rmse', 0)
+                    r2 = perf.get('test_r2', 0)
+                    mae = perf.get('test_mae', 0)
+                    
+                    st.markdown(f"""
+                    <div class="metric-row">
+                        <span>RMSE</span>
+                        <strong>{rmse:.3f}</strong>
+                    </div>
+                    <div class="metric-row">
+                        <span>R² Score</span>
+                        <strong>{r2:.3f}</strong>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    if mae:
+                        st.markdown(f"""
+                        <div class="metric-row">
+                            <span>MAE</span>
+                            <strong>{mae:.3f}</strong>
+                        </div>
+                        """, unsafe_allow_html=True)
                 
                 # Created date
                 created = metadata.get('created_at')
                 if created:
                     try:
-                        st.write(f"**Updated:** {created.strftime('%Y-%m-%d')}")
+                        date_str = created.strftime('%Y-%m-%d')
                     except:
-                        st.write(f"**Updated:** {str(created)[:10]}")
+                        date_str = str(created)[:10]
+                    st.markdown(f"""
+                    <div class="metric-row">
+                        <span>Last Updated</span>
+                        <strong>{date_str}</strong>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                st.markdown("</div>", unsafe_allow_html=True)
+                
+                # Performance interpretation
+                if perf:
+                    r2 = perf.get('test_r2', 0)
+                    if r2 >= 0.9:
+                        st.success("✅ Excellent model performance!")
+                    elif r2 >= 0.8:
+                        st.info("✓ Good model performance")
+                    else:
+                        st.warning("⚠️ Model may need retraining")
             else:
                 st.warning("No active model found")
         except Exception as e:
@@ -421,9 +746,12 @@ def main():
     
     # Main content
     try:
-        # Load data
-        current_aqi, current_time = load_current_aqi(db_handler)
-        historical_data = load_historical_data(db_handler, days_to_show)
+        # Load data with loading animation
+        with st.spinner('📊 Loading current AQI data...'):
+            current_aqi, current_time = load_current_aqi(db_handler)
+        
+        with st.spinner('📈 Loading historical data...'):
+            historical_data = load_historical_data(db_handler, days_to_show)
         
         # Get predictions (only if predictor initialized)
         predictions = None
@@ -470,24 +798,32 @@ def main():
                 for alert_day in alerts['alert_days']:
                     st.write(f"**{alert_day['day']}** ({alert_day['date']}): AQI {alert_day['aqi']:.1f} - {alert_day['category']}")
         
-        # 3-Day Forecast
+        # 3-Day Forecast - Enhanced Layout
         st.header("🔮 3-Day Forecast")
         
         if predictions:
-            cols = st.columns(3)
+            # Forecast Cards with better spacing
+            cols = st.columns([1, 1, 1], gap="large")
             for idx, (day, pred) in enumerate(predictions.items()):
                 category, color_class, emoji = get_aqi_category(pred['aqi'])
                 with cols[idx]:
                     st.markdown(f"""
                     <div class="forecast-card {color_class}">
-                        <h3>{day}</h3>
-                        <p style="margin: 0.5rem 0; font-weight: bold;">{pred['date']}</p>
-                        <h1 style="margin: 0.5rem 0;">{emoji} {pred['aqi']:.1f}</h1>
-                        <p style="margin: 0; font-weight: 500;">{category}</p>
+                        <h2 style="margin: 0; font-size: 1.5rem; font-weight: 700;">{day}</h2>
+                        <p style="margin: 0.8rem 0; font-weight: 600; font-size: 0.95rem; opacity: 0.9;">{pred['date']}</p>
+                        <div style="margin: 1.5rem 0;">
+                            <div style="font-size: 3.5rem; margin: 0.5rem 0;">{emoji}</div>
+                            <h1 style="margin: 0.5rem 0; font-size: 2.5rem; font-weight: 800;">{pred['aqi']:.1f}</h1>
+                        </div>
+                        <p style="margin: 0; font-weight: 600; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.5px;">{category}</p>
                     </div>
                     """, unsafe_allow_html=True)
             
-            st.plotly_chart(create_forecast_chart(predictions), use_container_width=True)
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            # Chart with animation
+            with st.spinner('📊 Generating forecast chart...'):
+                st.plotly_chart(create_forecast_chart(predictions), use_container_width=True)
         else:
             st.info("📝 3-day predictions unavailable. Please train a model first using Model_Training.ipynb")
         
@@ -609,7 +945,21 @@ def main():
     
     # Footer
     st.divider()
-    st.caption("© 2026 AQI Predictor | Data updated hourly | Models retrained daily")
+    st.markdown("### 🌍 AQI Predictor")
+    st.caption("Air Quality Monitoring & Prediction System for Hyderabad, Sindh")
+    st.caption("Data updated hourly | Models retrained daily")
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.link_button("💻 GitHub", "https://github.com/uzairhussain193/")
+    with col2:
+        st.link_button("💼 LinkedIn", "https://linkedin.com/in/uzairhussain1")
+    with col3:
+        st.link_button("🌐 Portfolio", "https://bitly.cx/uzairhussain/")
+
+    st.caption("© 2026 Built with ❤️ using Streamlit | Part of 10 Pearls Shine Internship")
+
+
 
 
 if __name__ == "__main__":
