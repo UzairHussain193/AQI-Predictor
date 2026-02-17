@@ -43,3 +43,16 @@ openmeteo_requests
 # mongodb atlas
 pymongo[srv] 
 dnspython
+
+streamlit
+pandas
+numpy
+plotly
+pymongo
+dnspython
+python-dotenv
+requests
+scikit-learn
+xgboost
+lightgbm
+shap
