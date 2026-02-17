@@ -88,3 +88,8 @@ MODEL_TRAINING_GUIDEs.md
 streamlit/.streamlit/secrets.toml
 
 report/
+
+*.md
+
+!streamlit/README.md
+!README.md

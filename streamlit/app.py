@@ -27,7 +27,13 @@ import streamlit as st
 
 # SET ENVIRONMENT VARIABLES FROM SECRETS (before other imports)
 # This ensures MongoDB handler and data fetchers use the correct credentials
-os.environ["MONGODB_URI"] = st.secrets.get("MONGODB_URI", os.getenv("MONGODB_URI", ""))
+# os.environ["MONGODB_URI"] = st.secrets.get("MONGODB_URI", os.getenv("MONGODB_URI", ""))
+# os.environ["MONGODB_DATABASE"] = st.secrets.get("MONGODB_DATABASE", os.getenv("MONGODB_DATABASE", "aqi_feature_store"))
+
+# Around line 30, change to:
+os.environ["MONGODB_USERNAME"] = st.secrets.get("MONGODB_USERNAME", os.getenv("MONGODB_USERNAME", ""))
+os.environ["MONGODB_PASSWORD"] = st.secrets.get("MONGODB_PASSWORD", os.getenv("MONGODB_PASSWORD", ""))
+os.environ["MONGODB_CLUSTER"] = st.secrets.get("MONGODB_CLUSTER", os.getenv("MONGODB_CLUSTER", ""))
 os.environ["MONGODB_DATABASE"] = st.secrets.get("MONGODB_DATABASE", os.getenv("MONGODB_DATABASE", "aqi_feature_store"))
 os.environ["OPENWEATHER_API_KEY"] = st.secrets.get("OPENWEATHER_API_KEY", os.getenv("OPENWEATHER_API_KEY", ""))
 

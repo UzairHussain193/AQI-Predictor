@@ -11,18 +11,28 @@ class MongoDBHandler:
     """Handle MongoDB operations for feature store"""
     
     def __init__(self):
+        
         username_encoded = quote_plus(Config.MONGODB_USERNAME)
         password_encoded = quote_plus(Config.MONGODB_PASSWORD)
         
-        uri = f'mongodb+srv://{username_encoded}:{password_encoded}@{Config.MONGODB_CLUSTER}/?retryWrites=true&w=majority'
+        uri = f'mongodb+srv://{username_encoded}:{password_encoded}@{Config.MONGODB_CLUSTER}/?appName=AQIPredictor&retryWrites=true&w=majority'
+        # print(f"   URI (masked): mongodb+srv://{username_encoded}:****@{Config.MONGODB_CLUSTER}/...")
         
-        self.client = MongoClient(uri, server_api=ServerApi('1'))
-        self.db = self.client[Config.MONGODB_DATABASE]
-        self.historical_collection = self.db['historical_features']
-        self.current_collection = self.db['current_features']
-        self.metadata_collection = self.db['feature_metadata']
-        
-        self._create_indexes()
+        try:
+            self.client = MongoClient(uri, server_api=ServerApi('1'))
+            self.db = self.client[Config.MONGODB_DATABASE]
+            self.historical_collection = self.db['historical_features']
+            self.current_collection = self.db['current_features']
+            self.metadata_collection = self.db['feature_metadata']
+            
+            # Test connection
+            self.client.admin.command('ping')
+            print("   ✅ MongoDB connection successful!")
+            
+            self._create_indexes()
+        except Exception as e:
+            print(f"   ❌ MongoDB connection failed: {str(e)}")
+            raise
     
     def _create_indexes(self):
         """Create indexes for efficient querying"""
