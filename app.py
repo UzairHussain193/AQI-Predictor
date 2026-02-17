@@ -16,10 +16,13 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-WEBAPP_DIR = Path(__file__).parent
-PROJECT_ROOT = WEBAPP_DIR.parent
-sys.path.insert(0, str(PROJECT_ROOT))
+# WEBAPP_DIR = Path(__file__).parent
+# PROJECT_ROOT = WEBAPP_DIR.parent
+# sys.path.insert(0, str(PROJECT_ROOT))
 
+# Lines 19-21: Change to
+PROJECT_ROOT = Path(__file__).parent     # AQI Predictor/
+sys.path.insert(0, str(PROJECT_ROOT))
 # # Import project modules
 # from src.data.mongodb_handler import MongoDBHandler
 # from src.models.predict import AQIPredictor
