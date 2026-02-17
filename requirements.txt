@@ -1,0 +1,11 @@
+streamlit==1.54.0
+pymongo
+python-dotenv
+pandas
+numpy
+plotly
+dnspython
+requests
+scikit-learn
+xgboost
+lightgbm
