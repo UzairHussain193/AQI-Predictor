@@ -1095,7 +1095,7 @@ def main():
         st.divider()
         
         # Tabs for detailed views
-        tab1, tab2, tab3, tab4 = st.tabs(["📈 Historical Trends", "🧪 Pollutant Breakdown", "📊 Statistics", "📥 Download Data"])
+        tab1, tab2, tab3 = st.tabs(["📈 Historical Trends", "🧪 Pollutant Breakdown", "📊 Statistics"])
         
         with tab1:
             if not historical_data.empty:
@@ -1173,36 +1173,6 @@ def main():
                 st.plotly_chart(fig, use_container_width=True)
             else:
                 st.warning("No data available for statistics")
-        
-        with tab4:
-            st.subheader("Download Historical Data")
-            
-            if not historical_data.empty:
-                # Prepare download data - select available columns
-                base_cols = ['timestamp', 'aqi']
-                pollutant_cols = ['pm25', 'pm2_5', 'pm10', 'o3', 'no2', 'co', 'so2', 'nh3']
-                
-                cols_to_export = base_cols.copy()
-                for col in pollutant_cols:
-                    if col in historical_data.columns:
-                        cols_to_export.append(col)
-                
-                download_data = historical_data[cols_to_export].copy()
-                download_data['timestamp'] = download_data['timestamp'].astype(str)
-                
-                csv = download_data.to_csv(index=False)
-                
-                st.download_button(
-                    label="📥 Download as CSV",
-                    data=csv,
-                    file_name=f"aqi_data_{datetime.now().strftime('%Y%m%d')}.csv",
-                    mime="text/csv",
-                    use_container_width=True
-                )
-                
-                st.info(f"Dataset contains {len(download_data)} records")
-            else:
-                st.warning("No data available for download")
     
     except Exception as e:
         st.error(f"❌ Error loading data: {str(e)}")
