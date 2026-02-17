@@ -30,7 +30,7 @@ def setup_environment():
 
 # 6. Main function
 def main():
-    setup_environment()  # Call this FIRST
+    # setup_environment()  # Call this FIRST
     
     st.title("Test App")
     st.write(f"Username: {os.getenv('MONGODB_USERNAME')}")

@@ -3,6 +3,10 @@ Streamlit Dashboard for AQI Prediction System
 Air Quality Index Predictor for Hyderabad, Sindh
 """
 import streamlit as st
+import sys
+from pathlib import Path
+import os
+
 
 # Page configuration
 st.set_page_config(
@@ -12,26 +16,13 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-import sys
-from pathlib import Path
-import os
-
-# Add project root to path
-current_file = Path(__file__).resolve()
-project_root = current_file.parent.parent  # Go up from streamlit/ to project root
-if str(project_root) not in sys.path:
-    sys.path.insert(0, str(project_root))
-
-
-def setup_environment():
-    os.environ["MONGODB_USERNAME"] = st.secrets.get("MONGODB_USERNAME", os.getenv("MONGODB_USERNAME", ""))
-    os.environ["MONGODB_PASSWORD"] = st.secrets.get("MONGODB_PASSWORD", os.getenv("MONGODB_PASSWORD", ""))
-    os.environ["MONGODB_CLUSTER"] = st.secrets.get("MONGODB_CLUSTER", os.getenv("MONGODB_CLUSTER", ""))
-    os.environ["MONGODB_DATABASE"] = st.secrets.get("MONGODB_DATABASE", os.getenv("MONGODB_DATABASE", "aqi_feature_store"))
-    os.environ["OPENWEATHER_API_KEY"] = st.secrets.get("OPENWEATHER_API_KEY", os.getenv("OPENWEATHER_API_KEY", ""))
+WEBAPP_DIR = Path(__file__).parent
+PROJECT_ROOT = WEBAPP_DIR.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 
 
 import pandas as pd
+from dotenv import load_dotenv
 import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
@@ -42,6 +33,19 @@ import time
 from src.data.mongodb_handler import MongoDBHandler
 from src.models.predict import AQIPredictor
 from src.models.model_registry import ModelRegistry
+
+
+# 4. Load .env for local dev (optional)
+if (PROJECT_ROOT / '.env').exists():
+    load_dotenv(PROJECT_ROOT / '.env')
+
+
+def setup_environment():
+    os.environ["MONGODB_USERNAME"] = st.secrets.get("MONGODB_USERNAME", os.getenv("MONGODB_USERNAME", ""))
+    os.environ["MONGODB_PASSWORD"] = st.secrets.get("MONGODB_PASSWORD", os.getenv("MONGODB_PASSWORD", ""))
+    os.environ["MONGODB_CLUSTER"] = st.secrets.get("MONGODB_CLUSTER", os.getenv("MONGODB_CLUSTER", ""))
+    os.environ["MONGODB_DATABASE"] = st.secrets.get("MONGODB_DATABASE", os.getenv("MONGODB_DATABASE", "aqi_feature_store"))
+    os.environ["OPENWEATHER_API_KEY"] = st.secrets.get("OPENWEATHER_API_KEY", os.getenv("OPENWEATHER_API_KEY", ""))
 
 
 # Custom CSS - Modern Design
