@@ -93,3 +93,9 @@ report/
 
 !streamlit/README.md
 !README.md
+
+streamlit/test/
+
+notes/
+
+!report/HYD-AQI-Predictor-Report.pdf
