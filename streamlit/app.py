@@ -546,6 +546,14 @@ def create_pollutant_chart(data):
 def main():
     """Main Streamlit app"""
     
+    # DEBUG: Print to logs
+    print("🚀 App starting...")
+    print(f"📝 Secrets available: {list(st.secrets.keys())}")
+    st.write("If you see this, secrets and imports work!")
+    st.write(f"MongoDB Username: {os.getenv('MONGODB_USERNAME')}")
+    st.write(f"Database: {os.getenv('MONGODB_DATABASE')}")
+    # Comment out everything else
+    
     # Hero Header
     st.markdown('<p class="main-header">🌍 Air Quality Index Predictor</p>', unsafe_allow_html=True)
     st.markdown('<p class="subtitle">📍 Hyderabad, Sindh, Pakistan (25.3960°N, 68.3578°E)</p>', unsafe_allow_html=True)
