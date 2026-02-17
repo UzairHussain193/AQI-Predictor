@@ -1,0 +1,39 @@
+# Core Streamlit
+streamlit==1.54.0
+
+# Data handling
+pandas
+numpy
+
+# Visualization
+plotly
+
+# MongoDB
+pymongo
+dnspython
+
+# Environment variables
+python-dotenv
+
+# ML/AI dependencies
+scikit-learn
+joblib
+xgboost
+lightgbm
+
+# API and web requests
+requests
+
+# Date/time handling
+pytz
+python-dateutil
+
+# Additional common dependencies
+scipy
+matplotlib
+seaborn
+
+# If you use any of these, uncomment:
+# tensorflow
+# torch
+# keras
