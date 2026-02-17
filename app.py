@@ -276,264 +276,264 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# Cache functions
-@st.cache_resource
-def init_db_handler():
-    """Initialize MongoDB handler"""
-    return MongoDBHandler()
+# # Cache functions
+# @st.cache_resource
+# def init_db_handler():
+#     """Initialize MongoDB handler"""
+#     return MongoDBHandler()
 
-@st.cache_resource
-def init_predictor():
-    """Initialize AQI Predictor"""
-    return AQIPredictor(use_mongodb=True)
+# @st.cache_resource
+# def init_predictor():
+#     """Initialize AQI Predictor"""
+#     return AQIPredictor(use_mongodb=True)
 
-@st.cache_data(ttl=3600)  # Cache for 1 hour
-def load_current_aqi(_db_handler):
-    """Load current AQI from MongoDB"""
-    collection = _db_handler.db['historical_features']
-    # Get the most recent record by sorting timestamp descending
-    latest_doc = collection.find_one(sort=[('timestamp', -1)])
-    if latest_doc:
-        return latest_doc.get('aqi'), latest_doc.get('timestamp')
-    return None, None
+# @st.cache_data(ttl=3600)  # Cache for 1 hour
+# def load_current_aqi(_db_handler):
+#     """Load current AQI from MongoDB"""
+#     collection = _db_handler.db['historical_features']
+#     # Get the most recent record by sorting timestamp descending
+#     latest_doc = collection.find_one(sort=[('timestamp', -1)])
+#     if latest_doc:
+#         return latest_doc.get('aqi'), latest_doc.get('timestamp')
+#     return None, None
 
-@st.cache_data(ttl=3600)
-def load_historical_data(_db_handler, days=7):
-    """Load historical AQI data"""
-    from datetime import timedelta
-    collection = _db_handler.db['historical_features']
+# @st.cache_data(ttl=3600)
+# def load_historical_data(_db_handler, days=7):
+#     """Load historical AQI data"""
+#     from datetime import timedelta
+#     collection = _db_handler.db['historical_features']
     
-    # Calculate cutoff time for last N days
-    cutoff_time = datetime.now() - timedelta(days=days)
+#     # Calculate cutoff time for last N days
+#     cutoff_time = datetime.now() - timedelta(days=days)
     
-    # Query records from last N days, sorted by timestamp
-    cursor = collection.find(
-        {'timestamp': {'$gte': cutoff_time}}
-    ).sort('timestamp', 1)  # 1 = ascending
+#     # Query records from last N days, sorted by timestamp
+#     cursor = collection.find(
+#         {'timestamp': {'$gte': cutoff_time}}
+#     ).sort('timestamp', 1)  # 1 = ascending
     
-    documents = list(cursor)
+#     documents = list(cursor)
     
-    if not documents:
-        return pd.DataFrame()
+#     if not documents:
+#         return pd.DataFrame()
     
-    # Convert to DataFrame - flatten all nested fields
-    rows = []
-    for doc in documents:
-        row = {}
-        # Flatten document - handle nested features
-        for key, value in doc.items():
-            if key == '_id':
-                row['_id'] = str(value)
-            elif isinstance(value, dict):
-                # If value is dict, flatten it
-                row.update(value)
-            else:
-                row[key] = value
-        rows.append(row)
+#     # Convert to DataFrame - flatten all nested fields
+#     rows = []
+#     for doc in documents:
+#         row = {}
+#         # Flatten document - handle nested features
+#         for key, value in doc.items():
+#             if key == '_id':
+#                 row['_id'] = str(value)
+#             elif isinstance(value, dict):
+#                 # If value is dict, flatten it
+#                 row.update(value)
+#             else:
+#                 row[key] = value
+#         rows.append(row)
     
-    df = pd.DataFrame(rows)
-    return df
+#     df = pd.DataFrame(rows)
+#     return df
 
-@st.cache_data(ttl=3600)
-def get_predictions(_predictor):
-    """Get 3-day predictions"""
-    predictions = _predictor.predict_next_3_days()
-    alerts = _predictor.check_hazardous_alert(predictions)
-    return predictions, alerts
-
-
-def get_aqi_category(aqi):
-    """Get AQI category and color"""
-    if aqi <= 50:
-        return "Good", "good", "🟢"
-    elif aqi <= 100:
-        return "Moderate", "moderate", "🟡"
-    elif aqi <= 150:
-        return "Unhealthy for Sensitive Groups", "unhealthy-sensitive", "🟠"
-    elif aqi <= 200:
-        return "Unhealthy", "unhealthy", "🔴"
-    elif aqi <= 300:
-        return "Very Unhealthy", "very-unhealthy", "🟣"
-    else:
-        return "Hazardous", "hazardous", "🟤"
+# @st.cache_data(ttl=3600)
+# def get_predictions(_predictor):
+#     """Get 3-day predictions"""
+#     predictions = _predictor.predict_next_3_days()
+#     alerts = _predictor.check_hazardous_alert(predictions)
+#     return predictions, alerts
 
 
-def get_health_message(aqi):
-    """Get health recommendation based on AQI"""
-    if aqi <= 50:
-        return "Air quality is good. It's a great day to be active outside!"
-    elif aqi <= 100:
-        return "Air quality is acceptable. Unusually sensitive people should consider reducing prolonged outdoor exertion."
-    elif aqi <= 150:
-        return "Sensitive groups should reduce prolonged or heavy outdoor exertion."
-    elif aqi <= 200:
-        return "Everyone should reduce prolonged or heavy outdoor exertion."
-    elif aqi <= 300:
-        return "Everyone should avoid prolonged or heavy outdoor exertion."
-    else:
-        return "Health alert: Everyone should avoid all outdoor exertion."
+# def get_aqi_category(aqi):
+#     """Get AQI category and color"""
+#     if aqi <= 50:
+#         return "Good", "good", "🟢"
+#     elif aqi <= 100:
+#         return "Moderate", "moderate", "🟡"
+#     elif aqi <= 150:
+#         return "Unhealthy for Sensitive Groups", "unhealthy-sensitive", "🟠"
+#     elif aqi <= 200:
+#         return "Unhealthy", "unhealthy", "🔴"
+#     elif aqi <= 300:
+#         return "Very Unhealthy", "very-unhealthy", "🟣"
+#     else:
+#         return "Hazardous", "hazardous", "🟤"
 
 
-def create_gauge_chart(aqi, title="Current AQI"):
-    """Create gauge chart for AQI"""
-    category, color_class, emoji = get_aqi_category(aqi)
-    
-    fig = go.Figure(go.Indicator(
-        mode = "gauge+number+delta",
-        value = aqi,
-        domain = {'x': [0, 1], 'y': [0, 1]},
-        title = {'text': title, 'font': {'size': 24}},
-        gauge = {
-            'axis': {'range': [None, 500], 'tickwidth': 1},
-            'bar': {'color': "darkblue"},
-            'steps': [
-                {'range': [0, 50], 'color': "#00e400"},
-                {'range': [50, 100], 'color': "#ffff00"},
-                {'range': [100, 150], 'color': "#ff7e00"},
-                {'range': [150, 200], 'color': "#ff0000"},
-                {'range': [200, 300], 'color': "#8f3f97"},
-                {'range': [300, 500], 'color': "#7e0023"}
-            ],
-            'threshold': {
-                'line': {'color': "red", 'width': 4},
-                'thickness': 0.75,
-                'value': 200
-            }
-        }
-    ))
-    
-    fig.update_layout(height=300, margin=dict(l=20, r=20, t=50, b=20))
-    return fig
+# def get_health_message(aqi):
+#     """Get health recommendation based on AQI"""
+#     if aqi <= 50:
+#         return "Air quality is good. It's a great day to be active outside!"
+#     elif aqi <= 100:
+#         return "Air quality is acceptable. Unusually sensitive people should consider reducing prolonged outdoor exertion."
+#     elif aqi <= 150:
+#         return "Sensitive groups should reduce prolonged or heavy outdoor exertion."
+#     elif aqi <= 200:
+#         return "Everyone should reduce prolonged or heavy outdoor exertion."
+#     elif aqi <= 300:
+#         return "Everyone should avoid prolonged or heavy outdoor exertion."
+#     else:
+#         return "Health alert: Everyone should avoid all outdoor exertion."
 
 
-def create_forecast_chart(predictions):
-    """Create 3-day forecast bar chart"""
-    days = list(predictions.keys())
-    aqi_values = [pred['aqi'] for pred in predictions.values()]
-    dates = [pred['date'] for pred in predictions.values()]
+# def create_gauge_chart(aqi, title="Current AQI"):
+#     """Create gauge chart for AQI"""
+#     category, color_class, emoji = get_aqi_category(aqi)
     
-    colors = []
-    for aqi in aqi_values:
-        if aqi <= 50:
-            colors.append('#00e400')
-        elif aqi <= 100:
-            colors.append('#ffff00')
-        elif aqi <= 150:
-            colors.append('#ff7e00')
-        elif aqi <= 200:
-            colors.append('#ff0000')
-        elif aqi <= 300:
-            colors.append('#8f3f97')
-        else:
-            colors.append('#7e0023')
+#     fig = go.Figure(go.Indicator(
+#         mode = "gauge+number+delta",
+#         value = aqi,
+#         domain = {'x': [0, 1], 'y': [0, 1]},
+#         title = {'text': title, 'font': {'size': 24}},
+#         gauge = {
+#             'axis': {'range': [None, 500], 'tickwidth': 1},
+#             'bar': {'color': "darkblue"},
+#             'steps': [
+#                 {'range': [0, 50], 'color': "#00e400"},
+#                 {'range': [50, 100], 'color': "#ffff00"},
+#                 {'range': [100, 150], 'color': "#ff7e00"},
+#                 {'range': [150, 200], 'color': "#ff0000"},
+#                 {'range': [200, 300], 'color': "#8f3f97"},
+#                 {'range': [300, 500], 'color': "#7e0023"}
+#             ],
+#             'threshold': {
+#                 'line': {'color': "red", 'width': 4},
+#                 'thickness': 0.75,
+#                 'value': 200
+#             }
+#         }
+#     ))
     
-    fig = go.Figure(data=[
-        go.Bar(
-            x=dates,
-            y=aqi_values,
-            marker_color=colors,
-            text=aqi_values,
-            texttemplate='%{text:.1f}',
-            textposition='outside',
-            hovertemplate='<b>%{x}</b><br>AQI: %{y:.1f}<extra></extra>'
-        )
-    ])
-    
-    fig.update_layout(
-        title="3-Day AQI Forecast",
-        xaxis_title="Date",
-        yaxis_title="AQI",
-        height=400,
-        showlegend=False,
-        hovermode='x'
-    )
-    
-    return fig
+#     fig.update_layout(height=300, margin=dict(l=20, r=20, t=50, b=20))
+#     return fig
 
 
-def create_historical_chart(data, days=7):
-    """Create historical AQI trend chart"""
-    if data.empty:
-        return None
+# def create_forecast_chart(predictions):
+#     """Create 3-day forecast bar chart"""
+#     days = list(predictions.keys())
+#     aqi_values = [pred['aqi'] for pred in predictions.values()]
+#     dates = [pred['date'] for pred in predictions.values()]
     
-    # Get last N days
-    data_sorted = data.sort_values('timestamp')
-    recent_data = data_sorted.tail(days * 24)
+#     colors = []
+#     for aqi in aqi_values:
+#         if aqi <= 50:
+#             colors.append('#00e400')
+#         elif aqi <= 100:
+#             colors.append('#ffff00')
+#         elif aqi <= 150:
+#             colors.append('#ff7e00')
+#         elif aqi <= 200:
+#             colors.append('#ff0000')
+#         elif aqi <= 300:
+#             colors.append('#8f3f97')
+#         else:
+#             colors.append('#7e0023')
     
-    fig = go.Figure()
+#     fig = go.Figure(data=[
+#         go.Bar(
+#             x=dates,
+#             y=aqi_values,
+#             marker_color=colors,
+#             text=aqi_values,
+#             texttemplate='%{text:.1f}',
+#             textposition='outside',
+#             hovertemplate='<b>%{x}</b><br>AQI: %{y:.1f}<extra></extra>'
+#         )
+#     ])
     
-    fig.add_trace(go.Scatter(
-        x=recent_data['timestamp'],
-        y=recent_data['aqi'],
-        mode='lines+markers',
-        name='AQI',
-        line=dict(color='#1f77b4', width=2),
-        marker=dict(size=4),
-        hovertemplate='%{x}<br>AQI: %{y:.1f}<extra></extra>'
-    ))
+#     fig.update_layout(
+#         title="3-Day AQI Forecast",
+#         xaxis_title="Date",
+#         yaxis_title="AQI",
+#         height=400,
+#         showlegend=False,
+#         hovermode='x'
+#     )
     
-    # Add threshold lines
-    fig.add_hline(y=50, line_dash="dash", line_color="green", annotation_text="Good")
-    fig.add_hline(y=100, line_dash="dash", line_color="yellow", annotation_text="Moderate")
-    fig.add_hline(y=150, line_dash="dash", line_color="orange", annotation_text="Unhealthy for Sensitive")
-    fig.add_hline(y=200, line_dash="dash", line_color="red", annotation_text="Unhealthy")
-    
-    fig.update_layout(
-        title=f"AQI Trend - Last {days} Days",
-        xaxis_title="Date",
-        yaxis_title="AQI",
-        height=400,
-        hovermode='x unified'
-    )
-    
-    return fig
+#     return fig
 
 
-def create_pollutant_chart(data):
-    """Create pollutant breakdown chart"""
-    if data.empty:
-        return None
+# def create_historical_chart(data, days=7):
+#     """Create historical AQI trend chart"""
+#     if data.empty:
+#         return None
     
-    latest = data.iloc[-1]
+#     # Get last N days
+#     data_sorted = data.sort_values('timestamp')
+#     recent_data = data_sorted.tail(days * 24)
     
-    # Map possible column names to pollutants
-    pollutant_mappings = {
-        'PM2.5': ['pm25', 'pm2_5', 'pm2.5', 'PM25'],
-        'PM10': ['pm10', 'PM10'],
-        'O3': ['o3', 'O3'],
-        'NO2': ['no2', 'NO2'],
-        'CO': ['co', 'CO']
-    }
+#     fig = go.Figure()
     
-    pollutants = {}
-    for name, possible_cols in pollutant_mappings.items():
-        value = 0
-        for col in possible_cols:
-            if col in latest.index:
-                value = latest.get(col, 0)
-                break
-        pollutants[name] = value
+#     fig.add_trace(go.Scatter(
+#         x=recent_data['timestamp'],
+#         y=recent_data['aqi'],
+#         mode='lines+markers',
+#         name='AQI',
+#         line=dict(color='#1f77b4', width=2),
+#         marker=dict(size=4),
+#         hovertemplate='%{x}<br>AQI: %{y:.1f}<extra></extra>'
+#     ))
     
-    fig = go.Figure(data=[
-        go.Bar(
-            y=list(pollutants.keys()),
-            x=list(pollutants.values()),
-            orientation='h',
-            marker_color=['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7'],
-            text=[f"{v:.1f}" for v in pollutants.values()],
-            textposition='outside'
-        )
-    ])
+#     # Add threshold lines
+#     fig.add_hline(y=50, line_dash="dash", line_color="green", annotation_text="Good")
+#     fig.add_hline(y=100, line_dash="dash", line_color="yellow", annotation_text="Moderate")
+#     fig.add_hline(y=150, line_dash="dash", line_color="orange", annotation_text="Unhealthy for Sensitive")
+#     fig.add_hline(y=200, line_dash="dash", line_color="red", annotation_text="Unhealthy")
     
-    fig.update_layout(
-        title="Current Pollutant Levels",
-        xaxis_title="Concentration",
-        yaxis_title="Pollutant",
-        height=350,
-        showlegend=False
-    )
+#     fig.update_layout(
+#         title=f"AQI Trend - Last {days} Days",
+#         xaxis_title="Date",
+#         yaxis_title="AQI",
+#         height=400,
+#         hovermode='x unified'
+#     )
     
-    return fig
+#     return fig
+
+
+# def create_pollutant_chart(data):
+#     """Create pollutant breakdown chart"""
+#     if data.empty:
+#         return None
+    
+#     latest = data.iloc[-1]
+    
+#     # Map possible column names to pollutants
+#     pollutant_mappings = {
+#         'PM2.5': ['pm25', 'pm2_5', 'pm2.5', 'PM25'],
+#         'PM10': ['pm10', 'PM10'],
+#         'O3': ['o3', 'O3'],
+#         'NO2': ['no2', 'NO2'],
+#         'CO': ['co', 'CO']
+#     }
+    
+#     pollutants = {}
+#     for name, possible_cols in pollutant_mappings.items():
+#         value = 0
+#         for col in possible_cols:
+#             if col in latest.index:
+#                 value = latest.get(col, 0)
+#                 break
+#         pollutants[name] = value
+    
+#     fig = go.Figure(data=[
+#         go.Bar(
+#             y=list(pollutants.keys()),
+#             x=list(pollutants.values()),
+#             orientation='h',
+#             marker_color=['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7'],
+#             text=[f"{v:.1f}" for v in pollutants.values()],
+#             textposition='outside'
+#         )
+#     ])
+    
+#     fig.update_layout(
+#         title="Current Pollutant Levels",
+#         xaxis_title="Concentration",
+#         yaxis_title="Pollutant",
+#         height=350,
+#         showlegend=False
+#     )
+    
+#     return fig
 
 
 def main():
@@ -545,6 +545,265 @@ def main():
     from src.data.mongodb_handler import MongoDBHandler
     from src.models.predict import AQIPredictor
     from src.models.model_registry import ModelRegistry
+    
+    # Cache functions
+    @st.cache_resource
+    def init_db_handler():
+        """Initialize MongoDB handler"""
+        return MongoDBHandler()
+
+    @st.cache_resource
+    def init_predictor():
+        """Initialize AQI Predictor"""
+        return AQIPredictor(use_mongodb=True)
+
+    @st.cache_data(ttl=3600)  # Cache for 1 hour
+    def load_current_aqi(_db_handler):
+        """Load current AQI from MongoDB"""
+        collection = _db_handler.db['historical_features']
+        # Get the most recent record by sorting timestamp descending
+        latest_doc = collection.find_one(sort=[('timestamp', -1)])
+        if latest_doc:
+            return latest_doc.get('aqi'), latest_doc.get('timestamp')
+        return None, None
+
+    @st.cache_data(ttl=3600)
+    def load_historical_data(_db_handler, days=7):
+        """Load historical AQI data"""
+        from datetime import timedelta
+        collection = _db_handler.db['historical_features']
+        
+        # Calculate cutoff time for last N days
+        cutoff_time = datetime.now() - timedelta(days=days)
+        
+        # Query records from last N days, sorted by timestamp
+        cursor = collection.find(
+            {'timestamp': {'$gte': cutoff_time}}
+        ).sort('timestamp', 1)  # 1 = ascending
+        
+        documents = list(cursor)
+        
+        if not documents:
+            return pd.DataFrame()
+        
+        # Convert to DataFrame - flatten all nested fields
+        rows = []
+        for doc in documents:
+            row = {}
+            # Flatten document - handle nested features
+            for key, value in doc.items():
+                if key == '_id':
+                    row['_id'] = str(value)
+                elif isinstance(value, dict):
+                    # If value is dict, flatten it
+                    row.update(value)
+                else:
+                    row[key] = value
+            rows.append(row)
+        
+        df = pd.DataFrame(rows)
+        return df
+
+    @st.cache_data(ttl=3600)
+    def get_predictions(_predictor):
+        """Get 3-day predictions"""
+        predictions = _predictor.predict_next_3_days()
+        alerts = _predictor.check_hazardous_alert(predictions)
+        return predictions, alerts
+
+
+    def get_aqi_category(aqi):
+        """Get AQI category and color"""
+        if aqi <= 50:
+            return "Good", "good", "🟢"
+        elif aqi <= 100:
+            return "Moderate", "moderate", "🟡"
+        elif aqi <= 150:
+            return "Unhealthy for Sensitive Groups", "unhealthy-sensitive", "🟠"
+        elif aqi <= 200:
+            return "Unhealthy", "unhealthy", "🔴"
+        elif aqi <= 300:
+            return "Very Unhealthy", "very-unhealthy", "🟣"
+        else:
+            return "Hazardous", "hazardous", "🟤"
+
+
+    def get_health_message(aqi):
+        """Get health recommendation based on AQI"""
+        if aqi <= 50:
+            return "Air quality is good. It's a great day to be active outside!"
+        elif aqi <= 100:
+            return "Air quality is acceptable. Unusually sensitive people should consider reducing prolonged outdoor exertion."
+        elif aqi <= 150:
+            return "Sensitive groups should reduce prolonged or heavy outdoor exertion."
+        elif aqi <= 200:
+            return "Everyone should reduce prolonged or heavy outdoor exertion."
+        elif aqi <= 300:
+            return "Everyone should avoid prolonged or heavy outdoor exertion."
+        else:
+            return "Health alert: Everyone should avoid all outdoor exertion."
+
+
+    def create_gauge_chart(aqi, title="Current AQI"):
+        """Create gauge chart for AQI"""
+        category, color_class, emoji = get_aqi_category(aqi)
+        
+        fig = go.Figure(go.Indicator(
+            mode = "gauge+number+delta",
+            value = aqi,
+            domain = {'x': [0, 1], 'y': [0, 1]},
+            title = {'text': title, 'font': {'size': 24}},
+            gauge = {
+                'axis': {'range': [None, 500], 'tickwidth': 1},
+                'bar': {'color': "darkblue"},
+                'steps': [
+                    {'range': [0, 50], 'color': "#00e400"},
+                    {'range': [50, 100], 'color': "#ffff00"},
+                    {'range': [100, 150], 'color': "#ff7e00"},
+                    {'range': [150, 200], 'color': "#ff0000"},
+                    {'range': [200, 300], 'color': "#8f3f97"},
+                    {'range': [300, 500], 'color': "#7e0023"}
+                ],
+                'threshold': {
+                    'line': {'color': "red", 'width': 4},
+                    'thickness': 0.75,
+                    'value': 200
+                }
+            }
+        ))
+        
+        fig.update_layout(height=300, margin=dict(l=20, r=20, t=50, b=20))
+        return fig
+
+
+    def create_forecast_chart(predictions):
+        """Create 3-day forecast bar chart"""
+        days = list(predictions.keys())
+        aqi_values = [pred['aqi'] for pred in predictions.values()]
+        dates = [pred['date'] for pred in predictions.values()]
+        
+        colors = []
+        for aqi in aqi_values:
+            if aqi <= 50:
+                colors.append('#00e400')
+            elif aqi <= 100:
+                colors.append('#ffff00')
+            elif aqi <= 150:
+                colors.append('#ff7e00')
+            elif aqi <= 200:
+                colors.append('#ff0000')
+            elif aqi <= 300:
+                colors.append('#8f3f97')
+            else:
+                colors.append('#7e0023')
+        
+        fig = go.Figure(data=[
+            go.Bar(
+                x=dates,
+                y=aqi_values,
+                marker_color=colors,
+                text=aqi_values,
+                texttemplate='%{text:.1f}',
+                textposition='outside',
+                hovertemplate='<b>%{x}</b><br>AQI: %{y:.1f}<extra></extra>'
+            )
+        ])
+        
+        fig.update_layout(
+            title="3-Day AQI Forecast",
+            xaxis_title="Date",
+            yaxis_title="AQI",
+            height=400,
+            showlegend=False,
+            hovermode='x'
+        )
+        
+        return fig
+
+
+    def create_historical_chart(data, days=7):
+        """Create historical AQI trend chart"""
+        if data.empty:
+            return None
+        
+        # Get last N days
+        data_sorted = data.sort_values('timestamp')
+        recent_data = data_sorted.tail(days * 24)
+        
+        fig = go.Figure()
+        
+        fig.add_trace(go.Scatter(
+            x=recent_data['timestamp'],
+            y=recent_data['aqi'],
+            mode='lines+markers',
+            name='AQI',
+            line=dict(color='#1f77b4', width=2),
+            marker=dict(size=4),
+            hovertemplate='%{x}<br>AQI: %{y:.1f}<extra></extra>'
+        ))
+        
+        # Add threshold lines
+        fig.add_hline(y=50, line_dash="dash", line_color="green", annotation_text="Good")
+        fig.add_hline(y=100, line_dash="dash", line_color="yellow", annotation_text="Moderate")
+        fig.add_hline(y=150, line_dash="dash", line_color="orange", annotation_text="Unhealthy for Sensitive")
+        fig.add_hline(y=200, line_dash="dash", line_color="red", annotation_text="Unhealthy")
+        
+        fig.update_layout(
+            title=f"AQI Trend - Last {days} Days",
+            xaxis_title="Date",
+            yaxis_title="AQI",
+            height=400,
+            hovermode='x unified'
+        )
+        
+        return fig
+
+
+    def create_pollutant_chart(data):
+        """Create pollutant breakdown chart"""
+        if data.empty:
+            return None
+        
+        latest = data.iloc[-1]
+        
+        # Map possible column names to pollutants
+        pollutant_mappings = {
+            'PM2.5': ['pm25', 'pm2_5', 'pm2.5', 'PM25'],
+            'PM10': ['pm10', 'PM10'],
+            'O3': ['o3', 'O3'],
+            'NO2': ['no2', 'NO2'],
+            'CO': ['co', 'CO']
+        }
+        
+        pollutants = {}
+        for name, possible_cols in pollutant_mappings.items():
+            value = 0
+            for col in possible_cols:
+                if col in latest.index:
+                    value = latest.get(col, 0)
+                    break
+            pollutants[name] = value
+        
+        fig = go.Figure(data=[
+            go.Bar(
+                y=list(pollutants.keys()),
+                x=list(pollutants.values()),
+                orientation='h',
+                marker_color=['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7'],
+                text=[f"{v:.1f}" for v in pollutants.values()],
+                textposition='outside'
+            )
+        ])
+        
+        fig.update_layout(
+            title="Current Pollutant Levels",
+            xaxis_title="Concentration",
+            yaxis_title="Pollutant",
+            height=350,
+            showlegend=False
+        )
+        
+        return fig
 
     # Hero Header
     st.markdown('<p class="main-header">🌍 Air Quality Index Predictor</p>', unsafe_allow_html=True)
