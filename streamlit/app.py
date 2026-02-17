@@ -20,10 +20,10 @@ WEBAPP_DIR = Path(__file__).parent
 PROJECT_ROOT = WEBAPP_DIR.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-# Import project modules
-from src.data.mongodb_handler import MongoDBHandler
-from src.models.predict import AQIPredictor
-from src.models.model_registry import ModelRegistry
+# # Import project modules
+# from src.data.mongodb_handler import MongoDBHandler
+# from src.models.predict import AQIPredictor
+# from src.models.model_registry import ModelRegistry
 
 import pandas as pd
 from dotenv import load_dotenv
@@ -538,6 +538,11 @@ def main():
     
     setup_environment()  # Call the setup function
     
+    # Import project modules
+    from src.data.mongodb_handler import MongoDBHandler
+    from src.models.predict import AQIPredictor
+    from src.models.model_registry import ModelRegistry
+
     # Hero Header
     st.markdown('<p class="main-header">🌍 Air Quality Index Predictor</p>', unsafe_allow_html=True)
     st.markdown('<p class="subtitle">📍 Hyderabad, Sindh, Pakistan (25.3960°N, 68.3578°E)</p>', unsafe_allow_html=True)
